@@ -1,0 +1,57 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/v1/auth/**
+
+        - id: message-service
+          uri: lb://message-service
+          predicates:
+            - Path=/v1/messages/**
+
+        - id: coupon-service
+          uri: lb://coupon-service
+          predicates:
+            - Path=/v1/coupons/**
+
+        - id: review-service
+          uri: lb://review-service
+          predicates:
+            - Path=/v1/reviews/**
+
+        - id: restaurant-service
+          uri: lb://restaurant-service
+          predicates:
+            - Path=/v1/restaurants/**
+
+        - id: queue-service
+          uri: lb://queue-service
+          predicates:
+            - Path=/v1/queues/**
+
+        - id: reservation-service
+          uri: lb://reservation-service
+          predicates:
+            - Path=/v1/reservations/**
+
+      discovery:
+        locator:
+          enabled: true
+
+  config:
+    import: classpath:application-key.yml
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:19000/eureka/
+
+service:
+  jwt:
+    secret-key: ${JWT_SECRET_KEY}
+
+server:
+  port: 19001

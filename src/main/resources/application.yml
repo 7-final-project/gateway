@@ -1,0 +1,9 @@
+spring:
+  main:
+    web-application-type: reactive
+  application:
+    name: gateway-service
+  profiles:
+    active: dev
+
+
