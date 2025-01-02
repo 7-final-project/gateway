@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -19,7 +20,7 @@ import javax.crypto.SecretKey;
 
 @Component
 @Slf4j(topic = "JWT 검증 및 인가")
-public class JwtAuthorizationFilter  implements GlobalFilter, Ordered  {
+public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
 
     // Header KEY 값
     public static final String AUTHORIZATION_HEADER = "Authorization";
@@ -49,8 +50,14 @@ public class JwtAuthorizationFilter  implements GlobalFilter, Ordered  {
             return exchange.getResponse().setComplete();
         }
 
-        log.info("JWT 토큰 검증 성공: 사용자 인증 및 인가 통과");
-        return chain.filter(addUserInfoHeader(exchange, token));
+        String userId = getUserIdFromToken(token);
+
+        log.info("JWT 토큰 검증 성공: Passport 발급");
+        // --
+        // TODO : 현재는 토컨 검증 후 바로 Passport 를 발급하고 있음 -> Redis 캐싱 처리하여 개선 예정
+        // --
+        return addPassportToken(exchange, userId)
+                .flatMap(updatedExchange -> chain.filter(updatedExchange));
     }
 
     private String getJwtFromHeader(ServerWebExchange exchange) {
@@ -81,18 +88,6 @@ public class JwtAuthorizationFilter  implements GlobalFilter, Ordered  {
         return false;
     }
 
-    private ServerWebExchange addUserInfoHeader(ServerWebExchange exchange, String token) {
-        String userId = getUserIdFromToken(token);
-        ServerHttpRequest req = exchange.getRequest()
-                .mutate()
-                .header("X-User-Id", userId)
-                .build();
-
-        return exchange.mutate()
-                .request(req)
-                .build();
-    }
-
     private Jws<Claims> getClaimsJws(String token) {
         SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(secretKey));
         return Jwts.parserBuilder()
@@ -104,6 +99,30 @@ public class JwtAuthorizationFilter  implements GlobalFilter, Ordered  {
     private String getUserIdFromToken(String token) {
         Jws<Claims> claimsJws = getClaimsJws(token);
         return String.valueOf(claimsJws.getBody().get("userId", Long.class));
+    }
+
+    private Mono<ServerWebExchange> addPassportToken(ServerWebExchange exchange, String userId) {
+
+        WebClient webClient = WebClient.builder()
+                .baseUrl("http://localhost:19005")
+                .build();
+
+        return webClient.post()
+                .uri("/v1/auth/passport")
+                .header("X-User-Id", userId)
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(passportToken -> {
+                    log.info(passportToken);
+                    ServerHttpRequest updatedRequest = exchange.getRequest()
+                            .mutate()
+                            .header("X-Passport-Token", passportToken)
+                            .build();
+
+                    return exchange.mutate()
+                            .request(updatedRequest)
+                            .build();
+                });
     }
 
     @Override
