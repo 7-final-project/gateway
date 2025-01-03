@@ -41,25 +41,30 @@ spring:
         locator:
           enabled: true
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
   config:
     import: classpath:application-key.yml
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:19000/eureka/
-
 filter:
   v1:
-    enabled: true
-  v2:
     enabled: false
+  v2:
+    enabled: true
 
 management:
   endpoints:
     web:
       exposure:
         include: "*"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:19000/eureka/
 
 service:
   jwt:
