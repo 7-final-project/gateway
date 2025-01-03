@@ -112,10 +112,13 @@ public class JwtAuthorizationFilterV2 implements GlobalFilter, Ordered {
     public Mono<String> getOrCreatePassport(String userId) {
         return reactiveRedisTemplate.opsForValue()
                 .get(userId)
-                .switchIfEmpty(Mono.defer(() -> requestNewPassport(userId)
-                        .flatMap(newPassport -> reactiveRedisTemplate.opsForValue()
-                                .set(userId, newPassport, Duration.ofMinutes(5))
-                                .thenReturn(newPassport))))
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.info("Redis에서 Passport Token이 없습니다. 새로 발급 시도.");
+                    return requestNewPassport(userId)
+                            .flatMap(newPassport -> reactiveRedisTemplate.opsForValue()
+                                    .set(userId, newPassport, Duration.ofMinutes(5))
+                                    .thenReturn(newPassport));
+                }))
                 .doOnSuccess(passport -> log.info("Redis에서 Passport Token 조회 성공: {}", passport));
     }
 
