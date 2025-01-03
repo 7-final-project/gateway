@@ -24,11 +24,9 @@ import javax.crypto.SecretKey;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j(topic = "JwtAuthorizationFilterV1 Log")
 @ConditionalOnProperty(name = "filter.v1.enabled", havingValue = "true", matchIfMissing = true)
-@Slf4j(topic = "JWT 필터 V1")
 public class JwtAuthorizationFilterV1 implements GlobalFilter, Ordered {
-
-    private final MeterRegistry meterRegistry;
 
     // Header KEY 값
     public static final String AUTHORIZATION_HEADER = "Authorization";
@@ -62,17 +60,8 @@ public class JwtAuthorizationFilterV1 implements GlobalFilter, Ordered {
 
         log.info("JWT 토큰 검증 성공: Passport 발급");
 
-        // Timer 시작
-        Timer.Sample sample = Timer.start(meterRegistry);
-
         return addPassportToken(exchange, userId)
-                .flatMap(updatedExchange -> {
-                    sample.stop(Timer.builder("passport.request.time") // Timer 종료
-                            .description("Passport 발급 요청 소요 시간")
-                            .tag("method", "direct")
-                            .register(meterRegistry));
-                    return chain.filter(updatedExchange);
-                });
+                .flatMap(chain::filter);
     }
 
     private String getJwtFromHeader(ServerWebExchange exchange) {
