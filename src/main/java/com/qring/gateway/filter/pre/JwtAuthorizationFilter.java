@@ -3,6 +3,9 @@ package com.qring.gateway.filter.pre;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -19,8 +22,12 @@ import reactor.core.publisher.Mono;
 import javax.crypto.SecretKey;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j(topic = "JWT 검증 및 인가")
 public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
+
+    private final MeterRegistry meterRegistry;
+
 
     // Header KEY 값
     public static final String AUTHORIZATION_HEADER = "Authorization";
@@ -53,11 +60,18 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
         String userId = getUserIdFromToken(token);
 
         log.info("JWT 토큰 검증 성공: Passport 발급");
-        // --
-        // TODO : 현재는 토컨 검증 후 바로 Passport 를 발급하고 있음 -> Redis 캐싱 처리하여 개선 예정
-        // --
+
+        // Timer 시작
+        Timer.Sample sample = Timer.start(meterRegistry);
+
         return addPassportToken(exchange, userId)
-                .flatMap(updatedExchange -> chain.filter(updatedExchange));
+                .flatMap(updatedExchange -> {
+                    sample.stop(Timer.builder("passport.request.time") // Timer 종료
+                            .description("Passport 발급 요청 소요 시간")
+                            .tag("method", "direct")
+                            .register(meterRegistry));
+                    return chain.filter(updatedExchange);
+                });
     }
 
     private String getJwtFromHeader(ServerWebExchange exchange) {
@@ -113,7 +127,6 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
                 .retrieve()
                 .bodyToMono(String.class)
                 .map(passportToken -> {
-                    log.info(passportToken);
                     ServerHttpRequest updatedRequest = exchange.getRequest()
                             .mutate()
                             .header("X-Passport-Token", passportToken)

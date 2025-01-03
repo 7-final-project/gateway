@@ -49,6 +49,12 @@ eureka:
     service-url:
       defaultZone: http://localhost:19000/eureka/
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
 service:
   jwt:
     secret-key: ${JWT_SECRET_KEY}
