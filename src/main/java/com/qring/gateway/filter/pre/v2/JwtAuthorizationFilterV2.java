@@ -1,4 +1,4 @@
-package com.qring.gateway.filter.pre;
+package com.qring.gateway.filter.pre.v2;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
