@@ -8,6 +8,7 @@ import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -23,11 +24,11 @@ import javax.crypto.SecretKey;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j(topic = "JWT 검증 및 인가")
-public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
+@ConditionalOnProperty(name = "filter.v1.enabled", havingValue = "true", matchIfMissing = true)
+@Slf4j(topic = "JWT 필터 V1")
+public class JwtAuthorizationFilterV1 implements GlobalFilter, Ordered {
 
     private final MeterRegistry meterRegistry;
-
 
     // Header KEY 값
     public static final String AUTHORIZATION_HEADER = "Authorization";

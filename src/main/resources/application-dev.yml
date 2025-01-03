@@ -49,6 +49,12 @@ eureka:
     service-url:
       defaultZone: http://localhost:19000/eureka/
 
+filter:
+  v1:
+    enabled: true
+  v2:
+    enabled: false
+
 management:
   endpoints:
     web:
