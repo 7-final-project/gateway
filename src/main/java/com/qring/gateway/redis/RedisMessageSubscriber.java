@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j(topic = "RedisSubscriber Log")
-public class RedisSubscriber {
+@Slf4j(topic = "RedisMessageSubscriber Log")
+public class RedisMessageSubscriber {
 
     private final ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
 
