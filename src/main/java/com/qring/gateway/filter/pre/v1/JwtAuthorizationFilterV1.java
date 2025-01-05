@@ -1,10 +1,12 @@
-package com.qring.gateway.filter.pre;
+package com.qring.gateway.filter.pre.v1;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -19,8 +21,10 @@ import reactor.core.publisher.Mono;
 import javax.crypto.SecretKey;
 
 @Component
-@Slf4j(topic = "JWT 검증 및 인가")
-public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
+@RequiredArgsConstructor
+@Slf4j(topic = "JwtAuthorizationFilterV1 Log")
+@ConditionalOnProperty(name = "filter.v1.enabled", havingValue = "true", matchIfMissing = true)
+public class JwtAuthorizationFilterV1 implements GlobalFilter, Ordered {
 
     // Header KEY 값
     public static final String AUTHORIZATION_HEADER = "Authorization";
@@ -53,11 +57,9 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
         String userId = getUserIdFromToken(token);
 
         log.info("JWT 토큰 검증 성공: Passport 발급");
-        // --
-        // TODO : 현재는 토컨 검증 후 바로 Passport 를 발급하고 있음 -> Redis 캐싱 처리하여 개선 예정
-        // --
+
         return addPassportToken(exchange, userId)
-                .flatMap(updatedExchange -> chain.filter(updatedExchange));
+                .flatMap(chain::filter);
     }
 
     private String getJwtFromHeader(ServerWebExchange exchange) {
@@ -113,7 +115,6 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
                 .retrieve()
                 .bodyToMono(String.class)
                 .map(passportToken -> {
-                    log.info(passportToken);
                     ServerHttpRequest updatedRequest = exchange.getRequest()
                             .mutate()
                             .header("X-Passport-Token", passportToken)
