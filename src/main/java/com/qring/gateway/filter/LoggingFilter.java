@@ -1,4 +1,4 @@
-package com.qring.gateway.filter.post;
+package com.qring.gateway.filter;
 
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;

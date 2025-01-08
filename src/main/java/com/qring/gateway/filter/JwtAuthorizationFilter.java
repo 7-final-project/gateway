@@ -1,4 +1,4 @@
-package com.qring.gateway.filter.pre.v2;
+package com.qring.gateway.filter;
 
 import com.qring.gateway.service.PassportService;
 import io.jsonwebtoken.*;
@@ -24,7 +24,7 @@ import javax.crypto.SecretKey;
 @RequiredArgsConstructor
 @Slf4j(topic = "JwtAuthorizationFilterV2 Log")
 @ConditionalOnProperty(name = "filter.v2.enabled", havingValue = "true", matchIfMissing = true)
-public class JwtAuthorizationFilterV2 implements GlobalFilter, Ordered {
+public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
