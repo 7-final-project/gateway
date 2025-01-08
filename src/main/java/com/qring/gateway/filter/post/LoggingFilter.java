@@ -1,6 +1,8 @@
 package com.qring.gateway.filter.post;
 
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -13,10 +15,18 @@ import reactor.core.publisher.Mono;
 public class LoggingFilter implements GlobalFilter, Ordered {
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, org.springframework.cloud.gateway.filter.GatewayFilterChain chain) {
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         return chain.filter(exchange).then(Mono.fromRunnable(() -> {
-            ServerHttpResponse response = exchange.getResponse();
-            log.info("Request URI is {}", response.getStatusCode());
+            String transactionId = exchange.getRequest().getHeaders().getFirst("GLBL-TRX-ID");
+
+            MDC.put("glbl_trx_id", transactionId);
+
+            try {
+                ServerHttpResponse response = exchange.getResponse();
+                log.info("응답 상태 코드: {}", response.getStatusCode());
+            } finally {
+                MDC.clear();
+            }
         }));
     }
 
@@ -24,5 +34,4 @@ public class LoggingFilter implements GlobalFilter, Ordered {
     public int getOrder() {
         return Ordered.LOWEST_PRECEDENCE;
     }
-
 }
