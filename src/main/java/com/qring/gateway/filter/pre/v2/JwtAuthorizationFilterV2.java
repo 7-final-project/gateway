@@ -1,5 +1,6 @@
 package com.qring.gateway.filter.pre.v2;
 
+import com.qring.gateway.service.PassportService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -10,17 +11,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import javax.crypto.SecretKey;
-import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
@@ -31,7 +29,7 @@ public class JwtAuthorizationFilterV2 implements GlobalFilter, Ordered {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
-    private final ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
+    private final PassportService passportService;
 
     @Value("${service.jwt.secret-key}")
     private String secretKey;
@@ -56,7 +54,7 @@ public class JwtAuthorizationFilterV2 implements GlobalFilter, Ordered {
 
         String userId = getUserIdFromToken(token);
 
-        return getOrCreatePassport(userId)
+        return passportService.getOrCreatePassport(userId)
                 .flatMap(passportToken -> addPassportToRequest(exchange, passportToken))
                 .flatMap(chain::filter)
                 .doOnSuccess(aVoid -> log.info("JWT Authorization 필터 종료"));
@@ -102,35 +100,6 @@ public class JwtAuthorizationFilterV2 implements GlobalFilter, Ordered {
     private String getUserIdFromToken(String token) {
         Jws<Claims> claimsJws = getClaimsJws(token);
         return String.valueOf(claimsJws.getBody().get("userId", Long.class));
-    }
-
-    // -----
-    // NOTE: Redis에서 Passport Token을 가져오거나, 없으면 새로 발급하는 메서드
-    public Mono<String> getOrCreatePassport(String userId) {
-        return reactiveRedisTemplate.opsForValue()
-                .get(userId)
-                .switchIfEmpty(Mono.defer(() -> {
-                    log.info("Redis에 Passport Token 없음. 새로운 Passport 발급 시도");
-                    return requestNewPassport(userId)
-                            .flatMap(newPassport -> reactiveRedisTemplate.opsForValue()
-                                    .set(userId, newPassport, Duration.ofMinutes(5))
-                                    .thenReturn(newPassport));
-                }))
-                .doOnSuccess(passport -> log.info("Redis에서 Passport Token 조회 성공"))
-                .doOnError(e -> log.error("Passport 조회 중 오류 발생: {}", e.getMessage()));
-    }
-
-    // -----
-    // NOTE: 새로운 Passport Token 발급 요청
-    private Mono<String> requestNewPassport(String userId) {
-        return WebClient.create("http://localhost:19005")
-                .post()
-                .uri("/v1/auth/passport")
-                .header("X-User-Id", userId)
-                .retrieve()
-                .bodyToMono(String.class)
-                .doOnSuccess(passport -> log.info("새로운 Passport 발급 성공"))
-                .doOnError(e -> log.error("Passport 발급 실패: {}", e.getMessage()));
     }
 
     // -----
