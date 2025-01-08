@@ -41,29 +41,26 @@ public class JwtAuthorizationFilterV2 implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
+        log.info("JWT Authorization 필터 시작. 요청 경로: {}", path);
 
         if (path.equals("/v1/auth/login") || path.equals("/v1/users/join")) {
-            log.info("인증/인가 제외 경로. 필터를 통과합니다.");
             return chain.filter(exchange);
         }
 
         String token = getJwtFromHeader(exchange);
         if (token == null || !validateToken(token)) {
-
-            log.warn("유효하지 않은 JWT 토큰입니다. 요청을 차단합니다.");
-
+            log.error("JWT 토큰 검증 실패. 요청 거부");
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
 
         String userId = getUserIdFromToken(token);
 
-        log.info("JWT 토큰 검증 성공. Redis에서 Passport 확인");
         return getOrCreatePassport(userId)
                 .flatMap(passportToken -> addPassportToRequest(exchange, passportToken))
-                .flatMap(chain::filter);
+                .flatMap(chain::filter)
+                .doOnSuccess(aVoid -> log.info("JWT Authorization 필터 종료"));
     }
-
     //---
     // NOTE: Authorization 헤더에서 JWT 토큰 추출하는 메서드
     private String getJwtFromHeader(ServerWebExchange exchange) {
@@ -71,7 +68,7 @@ public class JwtAuthorizationFilterV2 implements GlobalFilter, Ordered {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
             return bearerToken.substring(BEARER_PREFIX.length());
         }
-        log.warn("Authorization 헤더가 없거나 잘못된 형식입니다.");
+        log.error("Authorization 헤더에서 JWT 토큰을 찾을 수 없음");
         return null;
     }
 
@@ -82,13 +79,13 @@ public class JwtAuthorizationFilterV2 implements GlobalFilter, Ordered {
             getClaimsJws(token);
             return true;
         } catch (SecurityException | MalformedJwtException | SignatureException e) {
-            log.error("Invalid JWT signature, 유효하지 않는 JWT 서명 입니다.");
+            log.error("유효하지 않는 JWT 토큰입니다.");
         } catch (ExpiredJwtException e) {
-            log.error("Expired JWT token, 만료된 JWT token 입니다.");
+            log.error("만료된 JWT 토큰입니다.");
         } catch (UnsupportedJwtException e) {
-            log.error("Unsupported JWT token, 지원되지 않는 JWT 토큰 입니다.");
+            log.error("지원되지 않는 JWT 토큰입니다.");
         } catch (IllegalArgumentException e) {
-            log.error("JWT claims is empty, 잘못된 JWT 토큰 입니다.");
+            log.error("잘못된 JWT 토큰입니다.");
         }
         return false;
     }
@@ -113,13 +110,14 @@ public class JwtAuthorizationFilterV2 implements GlobalFilter, Ordered {
         return reactiveRedisTemplate.opsForValue()
                 .get(userId)
                 .switchIfEmpty(Mono.defer(() -> {
-                    log.info("Redis에서 Passport Token이 없습니다. 새로 발급 시도.");
+                    log.info("Redis에 Passport Token 없음. 새로운 Passport 발급 시도");
                     return requestNewPassport(userId)
                             .flatMap(newPassport -> reactiveRedisTemplate.opsForValue()
                                     .set(userId, newPassport, Duration.ofMinutes(5))
                                     .thenReturn(newPassport));
                 }))
-                .doOnSuccess(passport -> log.info("Redis에서 Passport Token 조회 성공: {}", passport));
+                .doOnSuccess(passport -> log.info("Redis에서 Passport Token 조회 성공"))
+                .doOnError(e -> log.error("Passport 조회 중 오류 발생: {}", e.getMessage()));
     }
 
     // -----
@@ -131,6 +129,7 @@ public class JwtAuthorizationFilterV2 implements GlobalFilter, Ordered {
                 .header("X-User-Id", userId)
                 .retrieve()
                 .bodyToMono(String.class)
+                .doOnSuccess(passport -> log.info("새로운 Passport 발급 성공"))
                 .doOnError(e -> log.error("Passport 발급 실패: {}", e.getMessage()));
     }
 
@@ -148,6 +147,6 @@ public class JwtAuthorizationFilterV2 implements GlobalFilter, Ordered {
     // NOTE: 필터의 실행 순서를 결정
     @Override
     public int getOrder() {
-        return Ordered.HIGHEST_PRECEDENCE;
+        return Ordered.HIGHEST_PRECEDENCE + 2;
     }
 }
