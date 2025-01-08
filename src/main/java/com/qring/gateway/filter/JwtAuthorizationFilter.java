@@ -22,8 +22,7 @@ import javax.crypto.SecretKey;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j(topic = "JwtAuthorizationFilterV2 Log")
-@ConditionalOnProperty(name = "filter.v2.enabled", havingValue = "true", matchIfMissing = true)
+@Slf4j(topic = "JwtAuthorizationFilter")
 public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
