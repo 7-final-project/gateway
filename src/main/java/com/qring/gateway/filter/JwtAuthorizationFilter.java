@@ -7,7 +7,6 @@ import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -55,8 +54,7 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
 
         return passportService.getOrCreatePassport(userId)
                 .flatMap(passportToken -> addPassportToRequest(exchange, passportToken))
-                .flatMap(chain::filter)
-                .doOnSuccess(aVoid -> log.info("JWT Authorization 필터 종료"));
+                .flatMap(chain::filter);
     }
     //---
     // NOTE: Authorization 헤더에서 JWT 토큰 추출하는 메서드
