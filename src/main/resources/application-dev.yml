@@ -49,12 +49,6 @@ spring:
   config:
     import: classpath:application-key.yml
 
-filter:
-  v1:
-    enabled: false
-  v2:
-    enabled: true
-
 management:
   endpoints:
     web:
