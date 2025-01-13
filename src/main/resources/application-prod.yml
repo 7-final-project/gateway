@@ -4,7 +4,7 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:19000/eureka/
+      defaultZone: http://q-ring:19000/eureka/
 
 spring:
   cloud:
@@ -53,6 +53,9 @@ spring:
     redis:
       host: ${REDIS_PROD_HOST}
       port: ${REDIS_PROD_PORT}
+
+auth-service:
+  base-url: http://auth:19005
 
 management:
   endpoints:
