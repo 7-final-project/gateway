@@ -54,6 +54,9 @@ spring:
       host: ${REDIS_DEV_HOST}
       port: ${REDIS_DEV_PORT}
 
+auth-service:
+  base-url: http://localhost:19005
+
 management:
   endpoints:
     web:
