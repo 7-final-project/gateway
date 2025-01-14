@@ -1,0 +1,40 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  checks: write
+  pull-requests: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 원격 저장소에서 코드 가져오기
+      - uses: actions/checkout@v4
+
+      # dockerfile을 통해 이미지를 빌드하고, 이를 docker repo로 push 함.
+      - name: Docker build & push to docker repo
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker build -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/qring .
+          docker push ${{ secrets.DOCKER_USERNAME }}/qring
+
+      # appleboy/ssh-action@master 액션을 사용하여 지정한 서버에 ssh로 접속하고, script를 실행함.
+      - name: Deploy to server
+        uses: appleboy/ssh-action@master
+        id: deploy
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: ${{ secrets.KEY }}
+          envs: GITHUB_SHA
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/qring
+            docker stop $(docker ps -a -q)
+            docker run -d --log-driver=syslog -p 19001:19001 ${{ secrets.DOCKER_USERNAME }}/qring
+            docker rm $(docker ps --filter 'status=exited' -a -q)
+            docker image prune -a -f
