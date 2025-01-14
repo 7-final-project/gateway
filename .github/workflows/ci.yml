@@ -25,6 +25,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      # 3. 환경변수 가져오기
+      - name: Load environment variables
+        env:
+          DB_PROD_URL: ${{ secrets.DB_PROD_URL }}
+          DB_PROD_USER: ${{ secrets.DB_PROD_USER }}
+          DB_PROD_PASSWORD: ${{ secrets.DB_PROD_PASSWORD }}
+          REDIS_PROD_HOST: ${{ secrets.REDIS_PROD_HOST }}
+          REDIS_PROD_PORT: ${{ secrets.REDIS_PROD_PORT }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+        run: echo "Environment variables loaded."
+
       # gradle 실행 권한 부여
       - name: Run chmod to make gradlew executable
         run: chmod +x ./gradlew
