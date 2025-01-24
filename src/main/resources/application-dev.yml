@@ -66,5 +66,7 @@ management:
 service:
   jwt:
     secret-key: ${JWT_SECRET_KEY}
+  logstash:
+    url: ${LOGSTASH_DEV_URL}
 
 

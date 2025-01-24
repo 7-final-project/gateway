@@ -2,6 +2,7 @@
 <configuration scan="true" scanPeriod="30 seconds">
 
     <springProperty scope="context" name="appName" source="spring.application.name" />
+    <springProperty scope="context" name="logstashUrl" source="service.logstash.url" />
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
@@ -14,7 +15,7 @@
     <!-- Logstash로 로그 전송 -->
     <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <param name="Encoding" value="UTF-8"/>
-        <destination>logstash:50000</destination>
+        <destination>${logstashUrl}</destination>
 
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
