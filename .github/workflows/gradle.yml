@@ -42,9 +42,11 @@ jobs:
       - name: Docker 이미지 빌드 및 푸시
         if: github.ref_name == 'main'
         run: |
+          TAG=$(echo $GITHUB_SHA | cut -c1-7)
+          echo "TAG=${TAG}" >> $GITHUB_ENV
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker build -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/gateway .
-          docker push ${{ secrets.DOCKER_USERNAME }}/gateway
+          docker build -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/gateway:$TAG .
+          docker push ${{ secrets.DOCKER_USERNAME }}/gateway:$TAG
 
       # 6. 서버에 배포 (main 브랜치에서만 실행)
       - name: Jenkins Webhook 트리거
@@ -52,4 +54,4 @@ jobs:
         run: |
           curl -u "qring:117b772f3842fb27dedfe58618c6f5b5cf" \
                -H "Jenkins-Crumb:b17873b9c0c313cd74bb27dfc315e31985694fc505b93e8e9a725eee225160c85e239f336b12758e6a320835fe1079ac9f24a9ed9a3ef6d8f7450089406ee9f1" \
-               -X POST "http://3.39.57.211:8080/job/gateway/build?token=deploy-token"
+               -X POST "http://3.39.57.211:8080/job/gateway/buildWithParameters?token=deploy-token&TAG=${TAG}""
