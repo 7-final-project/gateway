@@ -45,6 +45,7 @@ jobs:
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker build -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/gateway .
           docker push ${{ secrets.DOCKER_USERNAME }}/gateway
+
       # 6. 서버에 배포 (main 브랜치에서만 실행)
       - name: Jenkins Webhook 트리거
         if: github.ref_name == 'main' # main 브랜치에서만 실행
