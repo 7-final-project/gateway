@@ -18,8 +18,6 @@ public class PassportService {
     @Value("${auth-service.base-url}")
     private String authServiceBaseUrl;
 
-    
-
     private final ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
 
     // -----
