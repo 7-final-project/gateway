@@ -1,34 +1,54 @@
-name: Java CI with Gradle
+name: CI/CD 워크플로우
 
 on:
   push:
-    branches: [ "develop" ]
+    branches:
+      - "develop"
+      - "main"
   pull_request:
-    branches: [ "develop" ]
+    branches:
+      - "develop"
 
 permissions:
   checks: write
   pull-requests: write
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 원격 저장소에서 코드 가져오기
-      - uses: actions/checkout@v4
+      # 1. 원격 저장소에서 코드 가져오기
+      - name: 코드 가져오기 (Checkout)
+        uses: actions/checkout@v4
 
-      # JDK 17 설정
-      - name: Set up JDK 17
+      # 2. JDK 17 설정
+      - name: JDK 17 설정
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # gradle 실행 권한 부여
-      - name: Run chmod to make gradlew executable
+      # 3. gradlew 실행 권한 부여
+      - name: Gradle Wrapper 실행 권한 설정
         run: chmod +x ./gradlew
 
-      # Gradle 빌드 실행 (테스트 생략)
-      - name: Build with Gradle Wrapper (Skip Tests)
+      # 4. Gradle 빌드 실행 (테스트 생략)
+      - name: Gradle 빌드 실행 (테스트 생략)
         run: ./gradlew build -x test
+        if: github.ref_name == 'develop' || github.ref_name == 'main'
+
+      # 5. Docker 이미지 빌드 및 Docker Hub로 푸시 (main 브랜치에서만 실행)
+      - name: Docker 이미지 빌드 및 푸시
+        if: github.ref_name == 'main'
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker build -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/qring .
+          docker push ${{ secrets.DOCKER_USERNAME }}/qring
+      # 6. 서버에 배포 (main 브랜치에서만 실행)
+      - name: Jenkins Webhook 트리거
+        if: github.ref_name == 'main' # main 브랜치에서만 실행
+        run: |
+          curl -u "qring:117b772f3842fb27dedfe58618c6f5b5cf" \
+               -H "Jenkins-Crumb:b17873b9c0c313cd74bb27dfc315e31985694fc505b93e8e9a725eee225160c85e239f336b12758e6a320835fe1079ac9f24a9ed9a3ef6d8f7450089406ee9f1" \
+               -X POST "http://3.39.57.211:8080/job/gateway/build?token=deploy-token"
