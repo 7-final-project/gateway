@@ -14,6 +14,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @Slf4j(topic = "PassportService")
 public class PassportService {
+    // 도커 이미지 최신화 테스트
 
     @Value("${auth-service.base-url}")
     private String authServiceBaseUrl;
