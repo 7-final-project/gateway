@@ -33,10 +33,19 @@ dependencies {
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.11.5'
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.11.5'
 
+	// Redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+	// TSID
+	implementation 'com.github.f4b6a3:tsid-creator:5.2.6'
+
 	// Spring Cloud
 	implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	// Logback
+	implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
 
 	// Web, Lombok, Test
 	implementation 'org.springframework.boot:spring-boot-starter-validation'

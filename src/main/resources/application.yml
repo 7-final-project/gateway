@@ -3,6 +3,8 @@ spring:
     web-application-type: reactive
   application:
     name: gateway-service
+  config:
+    import: classpath:application-key.yml
   profiles:
     active: dev
 

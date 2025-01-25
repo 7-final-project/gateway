@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration scan="true" scanPeriod="30 seconds">
+
+    <springProperty scope="context" name="appName" source="spring.application.name" />
+    <springProperty scope="context" name="logstashUrl" source="service.logstash.url" />
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level)--- [%cyan(${appName})] [%magenta(%thread)] [%blue(%X{GLBL_TRX_ID})] %yellow(%logger{36}) : %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- Logstash로 로그 전송 -->
+    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <param name="Encoding" value="UTF-8"/>
+        <destination>${logstashUrl}</destination>
+
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <logLevel />
+                <threadName />
+                <loggerName />
+                <message />
+                <stackTrace />
+                <mdc />
+                <provider class="net.logstash.logback.composite.GlobalCustomFieldsJsonProvider">
+                    <customFields>
+                        {"app_name": "${appName}"}
+                    </customFields>
+                </provider>
+            </providers>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="LOGSTASH" />
+    </root>
+
+</configuration>
