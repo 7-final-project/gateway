@@ -4,7 +4,7 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: http://43.202.223.166:19000/eureka/
+      defaultZone: ${EUREKA_PROD_URL}
 
 spring:
   cloud:
@@ -55,7 +55,7 @@ spring:
       port: ${REDIS_PROD_PORT}
 
 auth-service:
-  base-url: http://auth:19005
+  base-url: ${AUTH_PROD_URL}
 
 management:
   endpoints:
