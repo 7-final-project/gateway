@@ -4,7 +4,7 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: http://q-ring:19000/eureka/
+      defaultZone: http://43.202.223.166:19000/eureka/
 
 spring:
   cloud:
