@@ -16,6 +16,7 @@ import reactor.util.context.Context;
 @Slf4j(topic = "GlobalTransactionIdFilter")
 public class GlobalTransactionIdFilter implements GlobalFilter, Ordered {
 
+    // 이미지 변경 테스트
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String transactionId = TsidCreator.getTsid1024().toString();
